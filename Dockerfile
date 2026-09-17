@@ -1,21 +1,22 @@
-FROM python:3.9.10-slim
+FROM python:3.9-slim-bookworm
 
-ENV PYTHONUNBUFFERED 1
-
+ENV PYTHONUNBUFFERED=1
 EXPOSE 8000
 WORKDIR /app
 
-
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends netcat && \
-    rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    apt-get install -y --no-install-recommends netcat-traditional gcc python3-dev libpq-dev && \
+    rm -rf /var/lib/apt/lists/*
 
-COPY poetry.lock pyproject.toml ./
-RUN pip install poetry==1.1 && \
-    poetry config virtualenvs.in-project true && \
-    poetry install --no-dev
+COPY pyproject.toml ./
+
+RUN pip install poetry && \
+    poetry config virtualenvs.create false && \
+    poetry install --no-root
 
 COPY . ./
 
-CMD poetry run alembic upgrade head && \
-    poetry run uvicorn --host=0.0.0.0 app.main:app
+RUN pip install "setuptools<70.0.0"
+
+CMD alembic upgrade head && \
+    uvicorn --host=0.0.0.0 app.main:app
